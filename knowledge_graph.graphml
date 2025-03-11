@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d0" for="edge" attr.name="label" attr.type="string"/>
+<graph edgedefault="undirected"><node id="coffee shop"/>
+<node id="espresso"/>
+<node id="books"/>
+<node id="day"/>
+<node id="barista"/>
+<node id="John"/>
+<node id="Sarah"/>
+<edge source="coffee shop" target="John">
+  <data key="d0">entered</data>
+</edge>
+<edge source="espresso" target="John">
+  <data key="d0">ordered</data>
+</edge>
+<edge source="espresso" target="Sarah">
+  <data key="d0">prepared</data>
+</edge>
+<edge source="books" target="Sarah">
+  <data key="d0">discussed</data>
+</edge>
+<edge source="day" target="John">
+  <data key="d0">promised to return on</data>
+</edge>
+<edge source="barista" target="Sarah">
+  <data key="d0">worked as</data>
+</edge>
+<edge source="John" target="Sarah">
+  <data key="d0">greeted by</data>
+</edge>
+</graph></graphml>
