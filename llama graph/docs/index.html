@@ -1,0 +1,556 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 900px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+             #config {
+                 float: left;
+                 width: 400px;
+                 height: 600px;
+             }
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="1">1</option>
+                                
+                                    <option value="number">number</option>
+                                
+                                    <option value="single">single</option>
+                                
+                                    <option value="3d image">3d image</option>
+                                
+                                    <option value="scanning">scanning</option>
+                                
+                                    <option value="6">6</option>
+                                
+                                    <option value="4">4</option>
+                                
+                                    <option value="advanced algorithms">advanced algorithms</option>
+                                
+                                    <option value="layers within scanned data">layers within scanned data</option>
+                                
+                                    <option value="algorithm">algorithm</option>
+                                
+                                    <option value="contrast">contrast</option>
+                                
+                                    <option value="layers">layers</option>
+                                
+                                    <option value="algorithms">algorithms</option>
+                                
+                                    <option value="analysis">analysis</option>
+                                
+                                    <option value="cultural artifacts">cultural artifacts</option>
+                                
+                                    <option value="deep learning algorithms">deep learning algorithms</option>
+                                
+                                    <option value="forensic medicine">forensic medicine</option>
+                                
+                                    <option value="historical knowledge">historical knowledge</option>
+                                
+                                    <option value="images">images</option>
+                                
+                                    <option value="imaging technologies">imaging technologies</option>
+                                
+                                    <option value="intelligence">intelligence</option>
+                                
+                                    <option value="limits">limits</option>
+                                
+                                    <option value="objects">objects</option>
+                                
+                                    <option value="research">research</option>
+                                
+                                    <option value="researcher">researcher</option>
+                                
+                                    <option value="resolution limitations">resolution limitations</option>
+                                
+                                    <option value="scientific research">scientific research</option>
+                                
+                                    <option value="virtual unwrapping">virtual unwrapping</option>
+                                
+                                    <option value="x-ray ct scan">x-ray ct scan</option>
+                                
+                                    <option value="archeology">archeology</option>
+                                
+                                    <option value="artifacts">artifacts</option>
+                                
+                                    <option value="layers of text">layers of text</option>
+                                
+                                    <option value="material composition">material composition</option>
+                                
+                                    <option value="researchers">researchers</option>
+                                
+                                    <option value="unwrap">unwrap</option>
+                                
+                                    <option value="brief history of virtual unwrapping techniques">brief history of virtual unwrapping techniques</option>
+                                
+                                    <option value="virtual unwrapping techniques">virtual unwrapping techniques</option>
+                                
+                                    <option value="conclusion">conclusion</option>
+                                
+                                    <option value="conservation of cultural heritage">conservation of cultural heritage</option>
+                                
+                                    <option value="ct imaging">ct imaging</option>
+                                
+                                    <option value="delicate writings and artifacts">delicate writings and artifacts</option>
+                                
+                                    <option value="herculaneum scrolls">herculaneum scrolls</option>
+                                
+                                    <option value="digital algorithms">digital algorithms</option>
+                                
+                                    <option value="layers of interest">layers of interest</option>
+                                
+                                    <option value="digital procedure">digital procedure</option>
+                                
+                                    <option value="digital reconstruction algorithms">digital reconstruction algorithms</option>
+                                
+                                    <option value="internal structure imaging">internal structure imaging</option>
+                                
+                                    <option value="faint text or images">faint text or images</option>
+                                
+                                    <option value="texture mapping">texture mapping</option>
+                                
+                                    <option value="fragile items">fragile items</option>
+                                
+                                    <option value="innards">innards</option>
+                                
+                                    <option value="hidden text or details">hidden text or details</option>
+                                
+                                    <option value="how it works">how it works</option>
+                                
+                                    <option value="image processing techniques">image processing techniques</option>
+                                
+                                    <option value="machine learning">machine learning</option>
+                                
+                                    <option value="ink deposits">ink deposits</option>
+                                
+                                    <option value="texture">texture</option>
+                                
+                                    <option value="intensity">intensity</option>
+                                
+                                    <option value="writing materials">writing materials</option>
+                                
+                                    <option value="introduction">introduction</option>
+                                
+                                    <option value="object">object</option>
+                                
+                                    <option value="physical layers">physical layers</option>
+                                
+                                    <option value="virtual layers">virtual layers</option>
+                                
+                                    <option value="medical imaging">medical imaging</option>
+                                
+                                    <option value="micro-ct">micro-ct</option>
+                                
+                                    <option value="x-ray computed tomography (ct)">x-ray computed tomography (ct)</option>
+                                
+                                    <option value="x-ray source">x-ray source</option>
+                                
+                                    <option value="physical handling">physical handling</option>
+                                
+                                    <option value="references">references</option>
+                                
+                                    <option value="scanned data">scanned data</option>
+                                
+                                    <option value="segmentation & layer detection">segmentation & layer detection</option>
+                                
+                                    <option value="sealed items">sealed items</option>
+                                
+                                    <option value="tangible contents">tangible contents</option>
+                                
+                                    <option value="synchrotron radiation">synchrotron radiation</option>
+                                
+                                    <option value="wildlife detection systems">wildlife detection systems</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+            <div id="config"></div>
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"group": 1, "id": "1", "label": "1", "shape": "dot", "size": 2}, {"group": 1, "id": "number", "label": "number", "shape": "dot", "size": 1}, {"group": 1, "id": "single", "label": "single", "shape": "dot", "size": 1}, {"group": 2, "id": "3d image", "label": "3d image", "shape": "dot", "size": 1}, {"group": 2, "id": "scanning", "label": "scanning", "shape": "dot", "size": 11}, {"group": 3, "id": "6", "label": "6", "shape": "dot", "size": 1}, {"group": 3, "id": "4", "label": "4", "shape": "dot", "size": 1}, {"group": 2, "id": "advanced algorithms", "label": "advanced algorithms", "shape": "dot", "size": 2}, {"group": 2, "id": "layers within scanned data", "label": "layers within scanned data", "shape": "dot", "size": 2}, {"group": 4, "id": "algorithm", "label": "algorithm", "shape": "dot", "size": 2}, {"group": 4, "id": "contrast", "label": "contrast", "shape": "dot", "size": 2}, {"group": 4, "id": "layers", "label": "layers", "shape": "dot", "size": 14}, {"group": 5, "id": "algorithms", "label": "algorithms", "shape": "dot", "size": 16}, {"group": 5, "id": "analysis", "label": "analysis", "shape": "dot", "size": 4}, {"group": 5, "id": "cultural artifacts", "label": "cultural artifacts", "shape": "dot", "size": 3}, {"group": 5, "id": "deep learning algorithms", "label": "deep learning algorithms", "shape": "dot", "size": 4}, {"group": 5, "id": "forensic medicine", "label": "forensic medicine", "shape": "dot", "size": 3}, {"group": 5, "id": "historical knowledge", "label": "historical knowledge", "shape": "dot", "size": 3}, {"group": 5, "id": "images", "label": "images", "shape": "dot", "size": 8}, {"group": 5, "id": "imaging technologies", "label": "imaging technologies", "shape": "dot", "size": 4}, {"group": 5, "id": "intelligence", "label": "intelligence", "shape": "dot", "size": 3}, {"group": 5, "id": "limits", "label": "limits", "shape": "dot", "size": 4}, {"group": 5, "id": "objects", "label": "objects", "shape": "dot", "size": 10}, {"group": 5, "id": "research", "label": "research", "shape": "dot", "size": 16}, {"group": 5, "id": "researcher", "label": "researcher", "shape": "dot", "size": 4}, {"group": 5, "id": "resolution limitations", "label": "resolution limitations", "shape": "dot", "size": 3}, {"group": 5, "id": "scientific research", "label": "scientific research", "shape": "dot", "size": 3}, {"group": 5, "id": "virtual unwrapping", "label": "virtual unwrapping", "shape": "dot", "size": 34}, {"group": 5, "id": "x-ray ct scan", "label": "x-ray ct scan", "shape": "dot", "size": 3}, {"group": 5, "id": "archeology", "label": "archeology", "shape": "dot", "size": 1}, {"group": 5, "id": "artifacts", "label": "artifacts", "shape": "dot", "size": 6}, {"group": 5, "id": "layers of text", "label": "layers of text", "shape": "dot", "size": 6}, {"group": 5, "id": "material composition", "label": "material composition", "shape": "dot", "size": 6}, {"group": 5, "id": "researchers", "label": "researchers", "shape": "dot", "size": 6}, {"group": 5, "id": "unwrap", "label": "unwrap", "shape": "dot", "size": 5}, {"group": 6, "id": "brief history of virtual unwrapping techniques", "label": "brief history of virtual unwrapping techniques", "shape": "dot", "size": 1}, {"group": 6, "id": "virtual unwrapping techniques", "label": "virtual unwrapping techniques", "shape": "dot", "size": 5}, {"group": 6, "id": "conclusion", "label": "conclusion", "shape": "dot", "size": 1}, {"group": 5, "id": "conservation of cultural heritage", "label": "conservation of cultural heritage", "shape": "dot", "size": 1}, {"group": 2, "id": "ct imaging", "label": "ct imaging", "shape": "dot", "size": 1}, {"group": 5, "id": "delicate writings and artifacts", "label": "delicate writings and artifacts", "shape": "dot", "size": 2}, {"group": 5, "id": "herculaneum scrolls", "label": "herculaneum scrolls", "shape": "dot", "size": 2}, {"group": 4, "id": "digital algorithms", "label": "digital algorithms", "shape": "dot", "size": 2}, {"group": 4, "id": "layers of interest", "label": "layers of interest", "shape": "dot", "size": 2}, {"group": 5, "id": "digital procedure", "label": "digital procedure", "shape": "dot", "size": 1}, {"group": 5, "id": "digital reconstruction algorithms", "label": "digital reconstruction algorithms", "shape": "dot", "size": 2}, {"group": 5, "id": "internal structure imaging", "label": "internal structure imaging", "shape": "dot", "size": 2}, {"group": 2, "id": "faint text or images", "label": "faint text or images", "shape": "dot", "size": 2}, {"group": 2, "id": "texture mapping", "label": "texture mapping", "shape": "dot", "size": 2}, {"group": 5, "id": "fragile items", "label": "fragile items", "shape": "dot", "size": 2}, {"group": 5, "id": "innards", "label": "innards", "shape": "dot", "size": 2}, {"group": 4, "id": "hidden text or details", "label": "hidden text or details", "shape": "dot", "size": 1}, {"group": 6, "id": "how it works", "label": "how it works", "shape": "dot", "size": 1}, {"group": 4, "id": "image processing techniques", "label": "image processing techniques", "shape": "dot", "size": 2}, {"group": 4, "id": "machine learning", "label": "machine learning", "shape": "dot", "size": 2}, {"group": 4, "id": "ink deposits", "label": "ink deposits", "shape": "dot", "size": 2}, {"group": 4, "id": "texture", "label": "texture", "shape": "dot", "size": 2}, {"group": 4, "id": "intensity", "label": "intensity", "shape": "dot", "size": 2}, {"group": 4, "id": "writing materials", "label": "writing materials", "shape": "dot", "size": 2}, {"group": 6, "id": "introduction", "label": "introduction", "shape": "dot", "size": 1}, {"group": 2, "id": "object", "label": "object", "shape": "dot", "size": 3}, {"group": 4, "id": "physical layers", "label": "physical layers", "shape": "dot", "size": 2}, {"group": 4, "id": "virtual layers", "label": "virtual layers", "shape": "dot", "size": 2}, {"group": 5, "id": "medical imaging", "label": "medical imaging", "shape": "dot", "size": 1}, {"group": 5, "id": "micro-ct", "label": "micro-ct", "shape": "dot", "size": 2}, {"group": 5, "id": "x-ray computed tomography (ct)", "label": "x-ray computed tomography (ct)", "shape": "dot", "size": 2}, {"group": 2, "id": "x-ray source", "label": "x-ray source", "shape": "dot", "size": 2}, {"group": 5, "id": "physical handling", "label": "physical handling", "shape": "dot", "size": 1}, {"group": 6, "id": "references", "label": "references", "shape": "dot", "size": 1}, {"group": 2, "id": "scanned data", "label": "scanned data", "shape": "dot", "size": 2}, {"group": 2, "id": "segmentation \u0026 layer detection", "label": "segmentation \u0026 layer detection", "shape": "dot", "size": 2}, {"group": 5, "id": "sealed items", "label": "sealed items", "shape": "dot", "size": 2}, {"group": 5, "id": "tangible contents", "label": "tangible contents", "shape": "dot", "size": 2}, {"group": 5, "id": "synchrotron radiation", "label": "synchrotron radiation", "shape": "dot", "size": 2}, {"group": 5, "id": "wildlife detection systems", "label": "wildlife detection systems", "shape": "dot", "size": 2}]);
+                  edges = new vis.DataSet([{"from": "1", "title": "contextual proximity", "to": "number", "width": 0.5}, {"from": "1", "title": "contextual proximity", "to": "single", "width": 0.5}, {"from": "3d image", "title": "creates,contextual proximity", "to": "scanning", "width": 3.25}, {"from": "6", "title": "divided into", "to": "4", "width": 2.5}, {"from": "advanced algorithms", "title": "identify", "to": "layers within scanned data", "width": 2.5}, {"from": "advanced algorithms", "title": "contextual proximity", "to": "scanning", "width": 0.75}, {"from": "algorithm", "title": "achieved", "to": "contrast", "width": 2.5}, {"from": "algorithm", "title": "contextual proximity", "to": "layers", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "analysis", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "cultural artifacts", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "deep learning algorithms", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "forensic medicine", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "historical knowledge", "width": 0.5}, {"from": "algorithms", "title": "derived from,contextual proximity", "to": "images", "width": 3.0}, {"from": "algorithms", "title": "contextual proximity", "to": "imaging technologies", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "intelligence", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "limits", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "objects", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "research", "width": 1.5}, {"from": "algorithms", "title": "contextual proximity", "to": "researcher", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "resolution limitations", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "scientific research", "width": 0.5}, {"from": "algorithms", "title": "contextual proximity", "to": "virtual unwrapping", "width": 2.5}, {"from": "algorithms", "title": "contextual proximity", "to": "x-ray ct scan", "width": 0.5}, {"from": "analysis", "title": "pushed", "to": "limits", "width": 2.5}, {"from": "analysis", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "analysis", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "archeology", "title": "has application in,contextual proximity", "to": "virtual unwrapping", "width": 3.75}, {"from": "artifacts", "title": "contextual proximity", "to": "images", "width": 0.5}, {"from": "artifacts", "title": "contextual proximity", "to": "layers of text", "width": 1.0}, {"from": "artifacts", "title": "constitute,contextual proximity", "to": "material composition", "width": 3.5}, {"from": "artifacts", "title": "contextual proximity", "to": "objects", "width": 1.0}, {"from": "artifacts", "title": "contextual proximity", "to": "researchers", "width": 1.0}, {"from": "artifacts", "title": "damage-free method for,contextual proximity", "to": "unwrap", "width": 3.0}, {"from": "brief history of virtual unwrapping techniques", "title": "contextual proximity", "to": "virtual unwrapping techniques", "width": 1.25}, {"from": "conclusion", "title": "contextual proximity", "to": "virtual unwrapping techniques", "width": 1.25}, {"from": "conservation of cultural heritage", "title": "has application in,contextual proximity", "to": "virtual unwrapping", "width": 3.75}, {"from": "contrast", "title": "contextual proximity", "to": "layers", "width": 0.5}, {"from": "ct imaging", "title": "uses,contextual proximity", "to": "scanning", "width": 3.25}, {"from": "cultural artifacts", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "cultural artifacts", "title": "promise for conserving,contextual proximity", "to": "virtual unwrapping", "width": 3.75}, {"from": "deep learning algorithms", "title": "advances in", "to": "imaging technologies", "width": 2.5}, {"from": "deep learning algorithms", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "deep learning algorithms", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "delicate writings and artifacts", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "delicate writings and artifacts", "title": "are examples of", "to": "herculaneum scrolls", "width": 2.5}, {"from": "digital algorithms", "title": "contextual proximity", "to": "layers", "width": 0.5}, {"from": "digital algorithms", "title": "processed by", "to": "layers of interest", "width": 2.5}, {"from": "digital procedure", "title": "is a type of,contextual proximity", "to": "virtual unwrapping", "width": 3.75}, {"from": "digital reconstruction algorithms", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "digital reconstruction algorithms", "title": "can be empowered by", "to": "internal structure imaging", "width": 2.5}, {"from": "faint text or images", "title": "contextual proximity", "to": "scanning", "width": 0.75}, {"from": "faint text or images", "title": "accentuates", "to": "texture mapping", "width": 2.5}, {"from": "forensic medicine", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "forensic medicine", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "fragile items", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "fragile items", "title": "can be studied", "to": "innards", "width": 2.5}, {"from": "herculaneum scrolls", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "hidden text or details", "title": "contains,contextual proximity", "to": "layers", "width": 3.0}, {"from": "historical knowledge", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "historical knowledge", "title": "promise for restoring,contextual proximity", "to": "virtual unwrapping", "width": 3.75}, {"from": "how it works", "title": "contextual proximity", "to": "virtual unwrapping techniques", "width": 1.25}, {"from": "image processing techniques", "title": "contextual proximity", "to": "layers", "width": 0.5}, {"from": "image processing techniques", "title": "used for", "to": "machine learning", "width": 2.5}, {"from": "images", "title": "comprise,contextual proximity", "to": "layers of text", "width": 3.0}, {"from": "images", "title": "contextual proximity", "to": "material composition", "width": 0.5}, {"from": "images", "title": "contextual proximity", "to": "objects", "width": 0.75}, {"from": "images", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "images", "title": "contextual proximity", "to": "researchers", "width": 0.5}, {"from": "images", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "imaging technologies", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "imaging technologies", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "ink deposits", "title": "contextual proximity", "to": "layers", "width": 0.5}, {"from": "ink deposits", "title": "superimposed digitally", "to": "texture", "width": 2.5}, {"from": "innards", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "intelligence", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "intelligence", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "intensity", "title": "contextual proximity", "to": "layers", "width": 0.5}, {"from": "intensity", "title": "correlated to", "to": "writing materials", "width": 2.5}, {"from": "internal structure imaging", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "introduction", "title": "contextual proximity", "to": "virtual unwrapping techniques", "width": 1.25}, {"from": "layers", "title": "contextual proximity", "to": "layers of interest", "width": 0.5}, {"from": "layers", "title": "contextual proximity", "to": "machine learning", "width": 0.5}, {"from": "layers", "title": "composed of,contextual proximity", "to": "object", "width": 3.0}, {"from": "layers", "title": "contextual proximity", "to": "physical layers", "width": 0.5}, {"from": "layers", "title": "contextual proximity", "to": "texture", "width": 0.5}, {"from": "layers", "title": "contextual proximity", "to": "virtual layers", "width": 0.5}, {"from": "layers", "title": "contextual proximity", "to": "writing materials", "width": 0.5}, {"from": "layers of text", "title": "contextual proximity", "to": "material composition", "width": 1.0}, {"from": "layers of text", "title": "contextual proximity", "to": "objects", "width": 1.0}, {"from": "layers of text", "title": "contextual proximity", "to": "researchers", "width": 1.0}, {"from": "layers of text", "title": "contextual proximity", "to": "unwrap", "width": 0.5}, {"from": "layers within scanned data", "title": "contextual proximity", "to": "scanning", "width": 0.75}, {"from": "limits", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "limits", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "material composition", "title": "contextual proximity", "to": "objects", "width": 1.0}, {"from": "material composition", "title": "contextual proximity", "to": "researchers", "width": 1.0}, {"from": "material composition", "title": "contextual proximity", "to": "unwrap", "width": 0.5}, {"from": "medical imaging", "title": "has application in,contextual proximity", "to": "virtual unwrapping", "width": 3.75}, {"from": "micro-ct", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "micro-ct", "title": "is a type of", "to": "x-ray computed tomography (ct)", "width": 2.5}, {"from": "object", "title": "contextual proximity", "to": "scanning", "width": 0.75}, {"from": "object", "title": "emits rays to", "to": "x-ray source", "width": 2.5}, {"from": "objects", "title": "contextual proximity", "to": "research", "width": 0.75}, {"from": "objects", "title": "empower,contextual proximity", "to": "researchers", "width": 3.5}, {"from": "objects", "title": "contextual proximity", "to": "unwrap", "width": 0.5}, {"from": "objects", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "objects", "title": "examined", "to": "researcher", "width": 2.5}, {"from": "physical handling", "title": "helps to avoid damage from,contextual proximity", "to": "virtual unwrapping", "width": 3.75}, {"from": "physical layers", "title": "simulated to", "to": "virtual layers", "width": 2.5}, {"from": "references", "title": "contextual proximity", "to": "virtual unwrapping techniques", "width": 1.25}, {"from": "research", "title": "contextual proximity", "to": "researcher", "width": 0.75}, {"from": "research", "title": "area of active study,contextual proximity", "to": "resolution limitations", "width": 3.25}, {"from": "research", "title": "contextual proximity", "to": "scientific research", "width": 0.75}, {"from": "research", "title": "advances in,contextual proximity", "to": "virtual unwrapping", "width": 6.25}, {"from": "research", "title": "contextual proximity", "to": "x-ray ct scan", "width": 0.75}, {"from": "researcher", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "researchers", "title": "contextual proximity", "to": "unwrap", "width": 0.5}, {"from": "resolution limitations", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "scanned data", "title": "contextual proximity", "to": "scanning", "width": 0.75}, {"from": "scanned data", "title": "assists in analyzing", "to": "segmentation \u0026 layer detection", "width": 2.5}, {"from": "scanning", "title": "contextual proximity", "to": "segmentation \u0026 layer detection", "width": 0.75}, {"from": "scanning", "title": "contextual proximity", "to": "texture mapping", "width": 0.75}, {"from": "scanning", "title": "involves,contextual proximity", "to": "virtual unwrapping", "width": 3.25}, {"from": "scanning", "title": "contextual proximity", "to": "x-ray source", "width": 0.75}, {"from": "scientific research", "title": "advances in,contextual proximity", "to": "virtual unwrapping", "width": 3.75}, {"from": "sealed items", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "sealed items", "title": "are hidden within", "to": "tangible contents", "width": 2.5}, {"from": "synchrotron radiation", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "synchrotron radiation", "title": "has application in", "to": "wildlife detection systems", "width": 2.5}, {"from": "tangible contents", "title": "contextual proximity", "to": "virtual unwrapping", "width": 1.25}, {"from": "virtual unwrapping", "title": "contextual proximity", "to": "wildlife detection systems", "width": 1.25}, {"from": "virtual unwrapping", "title": "contextual proximity", "to": "x-ray computed tomography (ct)", "width": 1.25}, {"from": "virtual unwrapping", "title": "precursor to,contextual proximity", "to": "x-ray ct scan", "width": 3.75}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": true,
+        "filter": [
+            "physics"
+        ]
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "forceAtlas2Based": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.015,
+            "damping": 0.4,
+            "gravitationalConstant": -31,
+            "springConstant": 0.08,
+            "springLength": 100
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+                  // if this network requires displaying the configure window,
+                  // put it in its div
+                  options.configure["container"] = document.getElementById("config");
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
